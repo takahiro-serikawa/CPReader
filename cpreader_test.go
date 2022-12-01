@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// cr.Int()
 func TestInts(t *testing.T) {
 	f, err := os.Open("test-ints.txt")
 	if err != nil {
@@ -66,6 +67,7 @@ func TestInts(t *testing.T) {
 	//cr.Int() FAIL
 }
 
+// cr.Float64()
 func TestFloats(t *testing.T) {
 	f, err := os.Open("test-floats.txt")
 	if err != nil {
@@ -146,6 +148,29 @@ func MakeTestHW(dummy_txt string, h, w int) {
 	}
 }
 
+func MakeTestHW_CRLF(dummy_txt string, h, w int) {
+	rand.Seed(time.Now().UnixNano())
+
+	o, err := os.Create(dummy_txt)
+	if err != nil {
+		panic(err)
+	}
+	defer o.Close()
+	wr := bufio.NewWriter(o)
+	defer wr.Flush()
+
+	fmt.Fprint(wr, h, w)
+	fmt.Fprint(wr, "\r\n")
+	for i := 0; i < h; i++ {
+		bb := make([]byte, w)
+		for j := 0; j < w; j++ {
+			bb[j] = "abcdefghijklmnopqrstuvwxyz"[rand.Int()%26]
+		}
+		fmt.Fprint(wr, string(bb))
+		fmt.Fprint(wr, "\r\n")
+	}
+}
+
 func TestMain(m *testing.M) {
 	// before all...
 	err := os.MkdirAll(TESTDATA, 0777)
@@ -168,6 +193,16 @@ func TestMain(m *testing.M) {
 	}
 	if _, err := os.Stat(TESTDATA + "HW100Mx1.txt"); err != nil {
 		MakeTestHW(TESTDATA+"HW100Mx1.txt", 100_000_000, 1)
+	}
+
+	if _, err := os.Stat(TESTDATA + "HW10Kx10K-crlf.txt"); err != nil {
+		MakeTestHW_CRLF(TESTDATA+"HW10Kx10K-crlf.txt", 10_000, 10_000)
+	}
+	if _, err := os.Stat(TESTDATA + "HW1x100M-crlf.txt"); err != nil {
+		MakeTestHW_CRLF(TESTDATA+"HW1x100M-crlf.txt", 1, 100_000_000)
+	}
+	if _, err := os.Stat(TESTDATA + "HW100Mx1-crlf.txt"); err != nil {
+		MakeTestHW_CRLF(TESTDATA+"HW100Mx1-crlf.txt", 100_000_000, 1)
 	}
 
 	code := m.Run()
@@ -276,6 +311,8 @@ func BenchmarkBufio_Perm_2e7I2(b *testing.B) {
 	}
 }
 
+// cr.Line()
+
 func Benchmark_HW10Kx10K(b *testing.B) {
 	loadHW(b, TESTDATA+"HW10Kx10K.txt")
 }
@@ -308,6 +345,22 @@ func loadHW(b *testing.B, dummy_txt string) {
 		}
 	}
 }
+
+// cr.Line() CRLF対応
+
+func Benchmark_HW10Kx10K_CRLF(b *testing.B) {
+	loadHW(b, TESTDATA+"HW10Kx10K-crlf.txt")
+}
+
+func Benchmark_HW1x1000000_CRLF(b *testing.B) {
+	loadHW(b, TESTDATA+"HW1x100M-crlf.txt")
+}
+
+func Benchmark_HW1000000x1_CRLF(b *testing.B) {
+	loadHW(b, TESTDATA+"HW100Mx1-crlf.txt")
+}
+
+// 性能比較用; bufio.Scanner による行読み込み
 
 func Benchmark_ScHW10Kx10K(b *testing.B) {
 	ScloadHW(b, TESTDATA+"HW10Kx10K.txt")

@@ -203,9 +203,9 @@ func (cr *Reader) Line() string {
 	buf := cr.buf[cr.index:]
 	i := bytes.IndexByte(buf, '\n')
 	if i >= 0 {
-		s := string(buf[:i])
 		cr.index += i + 1
-		return s
+		s := string(buf[:i])
+		return cutCR(s)
 	}
 
 	ss := []string{string(buf)}
@@ -214,14 +214,23 @@ func (cr *Reader) Line() string {
 
 		i := bytes.IndexByte(cr.buf, '\n')
 		if i >= 0 {
+			cr.index = i + 1
 			ss = append(ss, string(cr.buf[:i]))
-			cr.index += i + 1
 			break
 		} else {
 			ss = append(ss, string(cr.buf))
 		}
 	}
-	return strings.Join(ss, "")
+	s := strings.Join(ss, "")
+	return cutCR(s)
+}
+
+func cutCR(s string) string {
+	l := len(s)
+	if l > 0 && s[l-1] == '\r' {
+		s = s[:l-1]
+	}
+	return s
 }
 
 func (cr *Reader) Word() string {
@@ -232,9 +241,9 @@ func (cr *Reader) Word() string {
 	buf := cr.buf[cr.index:]
 	i := bytes.IndexAny(buf, "\n ")
 	if i >= 0 {
-		s := string(buf[:i])
 		cr.index += i + 1
-		return s
+		s := string(buf[:i])
+		return cutCR(s)
 	}
 
 	ss := []string{string(buf)}
@@ -250,5 +259,6 @@ func (cr *Reader) Word() string {
 			ss = append(ss, string(cr.buf))
 		}
 	}
-	return strings.Join(ss, "")
+	s := strings.Join(ss, "")
+	return cutCR(s)
 }
